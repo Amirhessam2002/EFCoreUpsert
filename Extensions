@@ -1,0 +1,44 @@
+public static class EnumerableExtensions
+{
+    public static IEnumerable<object> CastJson<T>(this IEnumerable<T> source, Type returnType)
+    {
+        string[] jsonArray = source.Select(m => JsonConvert.SerializeObject(m)).ToArray();
+
+        List<object> result = new();
+        foreach (var item in jsonArray)
+        {
+            var converted = JsonConvert.DeserializeObject(item, returnType);
+            result.Add(converted);
+        }
+
+        return result;
+    }
+}
+
+public static class DbContextExtensions
+{
+    public static Type FindEntityTypeByName(this DbContext dbContext, string name)
+    {
+        var result = dbContext
+            .Model
+            .GetEntityTypes()
+            .Select(et => et.ClrType)
+            .Single(e => e.Name.ToLower() == name.Trim().ToLower());
+
+        return result;
+    }
+
+    public static PropertyInfo[] FindPrimaryKeyProperties(this DbContext dbContext, string name)
+    {
+        var result = dbContext
+            .Model
+            .GetEntityTypes()
+            .Single(et => et.ClrType.Name.ToLower() == name.Trim().ToLower())
+            .FindPrimaryKey()
+            .Properties
+            .Select(p => p.PropertyInfo)
+            .ToArray();
+
+        return result;
+    }
+}
