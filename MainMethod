@@ -1,0 +1,27 @@
+    public async Task AddOrUpdateExisting(string entityName, IEnumerable<object> objects)
+    {
+        var type = _dbContext.FindEntityTypeByName(entityName);
+
+        var items = objects.CastJson(type).ToList();
+
+        foreach (var item in items)
+        {
+            var primaryKeyValues = _dbContext
+                .FindPrimaryKeyProperties(entityName)
+                .Select(p => p.GetValue(item))
+                .ToArray();
+
+            var findResult = await _dbContext.FindAsync(type, primaryKeyValues);
+
+            if (findResult == null)
+                await _dbContext.AddAsync(item);
+            else
+            {
+                _dbContext.Entry(findResult).State = EntityState.Detached;
+
+                _dbContext.Update(item);
+            }
+        }
+
+        await _dbContext.SaveChangesAsync();
+    }
